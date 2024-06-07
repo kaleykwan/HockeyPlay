@@ -7,7 +7,7 @@ export default function Index() {
       <Text style={styles.title}>Explore</Text>
       <View style={styles.gameCard}>
         <Text>Pinpoint</Text>
-        <Link href="/profile" asChild>
+        <Link href="/pinpoint" asChild>
           <Pressable style={styles.playButton}>
             <Text style={{ color: "white" }}>Play</Text>
           </Pressable>
