@@ -6,7 +6,7 @@ export default function Index() {
     <SafeAreaView style={{ flex: 1 }}>
       <Text style={styles.title}>Explore</Text>
       <View style={styles.gameCard}>
-        <Text>Pinpoint</Text>
+        <Text style={styles.gameTitle}>Pinpoint</Text>
         <Link href="/pinpoint" asChild>
           <Pressable style={styles.playButton}>
             <Text style={{ color: "white" }}>Play</Text>
@@ -21,7 +21,8 @@ const styles = StyleSheet.create({
   gameCard: {
     flex: 1,
     alignItems: "center",
-    margin: "10%",
+    justifyContent: "center",
+    margin: "9%",
     marginTop: "7%",
     backgroundColor: "white",
     borderRadius: 15,
@@ -30,11 +31,17 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
     padding: "4%",
     borderRadius: 10,
+    margin: "4%"
   },
   title: {
-    marginLeft: "10%",
+    marginLeft: "9%",
     marginTop: "2%",
     fontSize: 25,
     fontWeight: "700",
   },
+  gameTitle: {
+    fontSize: 23,
+    fontWeight: "700",
+    marginTop: "4%"
+  }
 });
