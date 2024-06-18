@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   TextInput,
@@ -10,6 +10,41 @@ import {
   Keyboard,
 } from "react-native";
 
+const TEAMS = [
+  "Anaheim Ducks",
+  "Arizona Coyotes",
+  "Boston Bruins",
+  "Buffalo Sabres",
+  "Calgary Flames",
+  "Carolina Hurricanes",
+  "Chicago Blackhawks",
+  "Colorado Avalanche",
+  "Columbus Blue Jackets",
+  "Dallas Stars",
+  "Detroit Red Wings",
+  "Edmonton Oilers",
+  "Florida Panthers",
+  "Los Angeles Kings",
+  "Minnesota Wild",
+  "Montreal Canadiens",
+  "Nashville Predators",
+  "New Jersey Devils",
+  "New York Islanders",
+  "New York Rangers",
+  "Ottawa Senators",
+  "Philadelphia Flyers",
+  "Pittsburgh Penguins",
+  "San Jose Sharks",
+  "Seattle Kraken",
+  "St. Louis Blues",
+  "Tampa Bay Lightning",
+  "Toronto Maple Leafs",
+  "Vancouver Canucks",
+  "Vegas Golden Knights",
+  "Washington Capitals",
+  "Winnipeg Jets",
+];
+
 interface DropdownParameters {
   incrementRevealed: (team: string) => void;
 }
@@ -18,59 +53,24 @@ export default function PinpointDropdown({
   incrementRevealed,
 }: DropdownParameters) {
   const [input, setInput] = useState("");
-  const [filteredData, setFilteredData] = useState<string[]>([]);
-  const [data, setData] = useState<string[]>([
-    "Anaheim Ducks",
-    "Arizona Coyotes",
-    "Boston Bruins",
-    "Buffalo Sabres",
-    "Calgary Flames",
-    "Carolina Hurricanes",
-    "Chicago Blackhawks",
-    "Colorado Avalanche",
-    "Columbus Blue Jackets",
-    "Dallas Stars",
-    "Detroit Red Wings",
-    "Edmonton Oilers",
-    "Florida Panthers",
-    "Los Angeles Kings",
-    "Minnesota Wild",
-    "Montreal Canadiens",
-    "Nashville Predators",
-    "New Jersey Devils",
-    "New York Islanders",
-    "New York Rangers",
-    "Ottawa Senators",
-    "Philadelphia Flyers",
-    "Pittsburgh Penguins",
-    "San Jose Sharks",
-    "Seattle Kraken",
-    "St. Louis Blues",
-    "Tampa Bay Lightning",
-    "Toronto Maple Leafs",
-    "Vancouver Canucks",
-    "Vegas Golden Knights",
-    "Washington Capitals",
-    "Winnipeg Jets",
-  ]);
+
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const filteredData = useMemo(() => {
+    if (!input) return [];
+    return TEAMS.filter((item) =>
+      item.toLowerCase().includes(input.toLowerCase())
+    ).filter((item) => !selected.includes(item));
+  }, [input]);
 
   const handleInputChange = (text: string) => {
     setInput(text);
-    if (text) {
-      setFilteredData(
-        data.filter((item) => item.toLowerCase().includes(text.toLowerCase()))
-      );
-    } else {
-      setFilteredData([]);
-    }
   };
 
   const handleOptionSelect = (option: string) => {
-    setInput(option);
-    setFilteredData([]);
     incrementRevealed(option);
     setInput("");
-    setData(data.filter((item) => item != option));
+    setSelected((prev) => [...prev, option]);
   };
 
   return (
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     borderColor: "gray",
     borderWidth: 1,
     paddingHorizontal: 10,
-    marginHorizontal: "4%"
+    marginHorizontal: "4%",
   },
   dropdown: {
     position: "absolute",

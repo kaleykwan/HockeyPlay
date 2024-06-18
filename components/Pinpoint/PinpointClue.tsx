@@ -11,6 +11,7 @@ export default function PinpointClue({
   name,
   isAnimated,
 }: ClueParameters) {
+  
   if (revealed) {
     return (
       <View style={styles.revealedClue}>
@@ -18,6 +19,7 @@ export default function PinpointClue({
       </View>
     );
   } else {
+
     return <View style={styles.unrevealedClue}></View>;
   }
 }
