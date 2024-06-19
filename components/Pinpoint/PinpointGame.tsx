@@ -32,7 +32,7 @@ function createInitialState() {
   };
 }
 
-function reducer(state: reducerState, action) {
+function reducer(state: reducerState, action: { type: string; team?: any; }) {
   switch (action.type) {
     case "increment_revealed": {
       return {
