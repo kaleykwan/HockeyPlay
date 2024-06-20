@@ -103,29 +103,25 @@ export default function PinpointDropdown({
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
-    position: "relative",
+    // width: "100%",
+    // position: "relative",
   },
   input: {
     height: 40,
     borderColor: "gray",
     borderWidth: 1,
     paddingHorizontal: 10,
-    marginHorizontal: "4%",
+    marginHorizontal: 15,
   },
   dropdown: {
-    position: "absolute",
-    top: 40,
-    width: "100%",
-    maxHeight: 200,
+    maxHeight: 190,
     borderColor: "gray",
     borderWidth: 1,
     backgroundColor: "white",
     zIndex: 1,
+    marginHorizontal: 15,
   },
   option: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "gray",
+    padding: 10
   },
 });

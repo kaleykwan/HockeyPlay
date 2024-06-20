@@ -142,11 +142,6 @@ export default function PinpointGame() {
                 <Text style={pinpointStyles.solved}>Better luck tomorrow!</Text>
               )}
               <Text style={pinpointStyles.answerText}>Answer: {answer}</Text>
-              <Link href="/" asChild>
-                <Pressable style={pinpointStyles.playButton}>
-                  <Text style={{ color: "white" }}>Back To Home</Text>
-                </Pressable>
-              </Link>
             </View>
           )}
         </View>
@@ -163,21 +158,15 @@ const pinpointStyles = StyleSheet.create({
   },
   revealedClue: {
     backgroundColor: "#2a56eb",
-    padding: "4%",
-    margin: "4%",
+    padding: 15,
+    margin: 15,
     marginBottom: 0,
   },
   unrevealedClue: {
     backgroundColor: "#2a56eb",
-    padding: "4%",
-    margin: "4%",
+    padding: 15,
+    margin: 15,
     marginBottom: 0,
-  },
-  playButton: {
-    backgroundColor: "black",
-    padding: "4%",
-    borderRadius: 10,
-    margin: "4%",
   },
   solved: {
     textAlign: "center",
