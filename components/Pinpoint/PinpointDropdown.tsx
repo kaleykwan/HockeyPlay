@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     borderColor: "gray",
     borderWidth: 1,
     paddingHorizontal: 10,
-    marginHorizontal: 15,
+    marginHorizontal: 20,
   },
   dropdown: {
     maxHeight: 190,
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: "white",
     zIndex: 1,
-    marginHorizontal: 15,
+    marginHorizontal: 20,
   },
   option: {
     padding: 10

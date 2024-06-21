@@ -159,19 +159,19 @@ const pinpointStyles = StyleSheet.create({
   revealedClue: {
     backgroundColor: "#2a56eb",
     padding: 15,
-    margin: 15,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginBottom: 10,
   },
   unrevealedClue: {
     backgroundColor: "#2a56eb",
     padding: 15,
-    margin: 15,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginBottom: 10,
   },
   solved: {
     textAlign: "center",
     fontWeight: "700",
-    fontSize: 20,
+    fontSize: 15,
   },
   answerText: {
     textAlign: "center",
@@ -179,11 +179,11 @@ const pinpointStyles = StyleSheet.create({
     fontSize: 15,
   },
   clueContainer: {
-    marginBottom: "4%",
+    marginBottom: 15,
   },
   guessContainer: {
-    marginHorizontal: "4%",
-    marginBottom: "4%",
+    marginHorizontal: 20,
+    marginBottom: 15,
   },
   guess: {
     textDecorationLine: "line-through",
