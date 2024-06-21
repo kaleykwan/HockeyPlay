@@ -14,17 +14,21 @@ import {
 export default function Pinpoint() {
   return (
     <SafeAreaView style={styles.container}>
-      <View>
-        <Text style={styles.title}>Pinpoint</Text>
-        <PinpointGame />
-      </View>
-      <View>
-        <Link href="/" asChild>
-          <Pressable style={styles.playButton}>
-            <Text style={styles.buttonText}>Home</Text>
-          </Pressable>
-        </Link>
-      </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <View>
+            {/* <Text style={styles.title}>Pinpoint</Text> */}
+            <PinpointGame />
+          </View>
+          <View>
+            <Link href="/" asChild>
+              <Pressable style={styles.playButton}>
+                <Text style={styles.buttonText}>Home</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
@@ -33,7 +37,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
     flex: 1,
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   title: {
     textAlign: "center",
@@ -46,10 +50,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     alignSelf: "center",
-    marginBottom: 10
+    marginBottom: 10,
   },
   buttonText: {
     color: "white",
-    fontWeight: "600"
-  }
+    fontWeight: "600",
+  },
 });
