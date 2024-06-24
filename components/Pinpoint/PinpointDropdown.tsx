@@ -81,6 +81,7 @@ export default function PinpointDropdown({
         maxLength={30}
         onChangeText={handleInputChange}
         placeholder="Search NHL Team"
+        placeholderTextColor={"gray"}
       />
       {filteredData.length > 0 && (
         <FlatList
@@ -108,15 +109,16 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
+    borderWidth: 0.5,
+    borderColor: "#bababa",
     paddingHorizontal: 10,
     marginHorizontal: 20,
   },
   dropdown: {
     maxHeight: 190,
-    borderColor: "gray",
-    borderWidth: 1,
+    borderWidth: 0.5,
+    borderColor: "#bababa",
+    borderBottomEndRadius: 5,
     backgroundColor: "white",
     zIndex: 1,
     marginHorizontal: 20,

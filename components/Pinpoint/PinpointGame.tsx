@@ -8,8 +8,10 @@ import {
   Keyboard,
   Text,
   Pressable,
+  Modal,
 } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 
 interface reducerState {
   revealed: number;
@@ -32,7 +34,7 @@ function createInitialState() {
   };
 }
 
-function reducer(state: reducerState, action: { type: string; team?: any; }) {
+function reducer(state: reducerState, action: { type: string; team?: any }) {
   switch (action.type) {
     case "increment_revealed": {
       return {
@@ -96,8 +98,28 @@ export default function PinpointGame() {
 
   const renderClues = useCallback(
     (clue: string, index: number) => {
+      const baseColor = { r: 96, g: 77, b: 235 };
+      const colorIncrement = 20;
+
+      const backgroundColor = `rgb(
+      ${Math.max(0, baseColor.r - colorIncrement * index)},
+      ${Math.max(0, baseColor.g - colorIncrement * index)},
+      ${Math.max(0, baseColor.b - colorIncrement * index)}
+    )`;
       return (
-        <View key={`${clue}-${index}`} style={pinpointStyles.revealedClue}>
+        <View
+          key={`${clue}-${index}`}
+          style={[
+            pinpointStyles.clueBox,
+            {
+              backgroundColor,
+              borderTopRightRadius: index == 0 ? 5 : 0,
+              borderTopLeftRadius: index == 0 ? 5 : 0,
+              borderBottomRightRadius: index == 4 && !state.gameOver ? 5 : 0,
+              borderBottomLeftRadius: index == 4 && !state.gameOver ? 5 : 0,
+            },
+          ]}
+        >
           {index < state.revealed && (
             <Animated.Text
               entering={FadeIn.duration(550)}
@@ -107,46 +129,64 @@ export default function PinpointGame() {
               {clue}
             </Animated.Text>
           )}
+          {index >= state.revealed && (
+            <Animated.Text
+              entering={FadeIn.duration(550)}
+              exiting={FadeOut}
+              style={pinpointStyles.clue}
+            >
+              Player {index + 1}
+            </Animated.Text>
+          )}
         </View>
       );
     },
     [state.revealed]
   );
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View>
+      <View style={{ marginBottom: state.gameOver ? 0 : 15 }}>
+        {clues.map(renderClues)}
+      </View>
       <View>
-        <View style={pinpointStyles.clueContainer}>
-          {clues.map(renderClues)}
-        </View>
-        {state.guesses.length > 0 && (
-          <View style={pinpointStyles.guessContainer}>
-            {state.guesses.map((team: string, index: number) => (
-              <Text style={pinpointStyles.guess} key={index}>
-                {team}
-              </Text>
-            ))}
-          </View>
-        )}
-        <View>
-          {!state.gameOver && (
-            <PinpointDropdown incrementRevealed={incrementRevealed} />
-          )}
-        </View>
-        <View>
-          {state.gameOver && (
-            <View>
+        {state.gameOver && (
+          <View>
+            <Animated.View
+              entering={FadeIn.duration(550)}
+              style={[
+                pinpointStyles.answerContainer,
+                {
+                  borderTopRightRadius: state.gameOver ? 0 : 5,
+                  borderTopLeftRadius: state.gameOver ? 0 : 5,
+                },
+              ]}
+            >
               {state.solved && (
-                <Text style={pinpointStyles.solved}>You solved it!</Text>
+                <FontAwesome name="check-circle-o" color="white" size={20} />
               )}
               {!state.solved && (
-                <Text style={pinpointStyles.solved}>Better luck tomorrow!</Text>
+                <FontAwesome name="times-circle-o" color="white" size={20} />
               )}
-              <Text style={pinpointStyles.answerText}>Answer: {answer}</Text>
-            </View>
-          )}
-        </View>
+              <Text style={pinpointStyles.answerText}>{answer}</Text>
+            </Animated.View>
+          </View>
+        )}
       </View>
-    </TouchableWithoutFeedback>
+      {state.guesses.length > 0 && (
+        <View style={pinpointStyles.guessContainer}>
+          {state.guesses.map((team: string, index: number) => (
+            <Text style={pinpointStyles.guess} key={index}>
+              {team}
+            </Text>
+          ))}
+        </View>
+      )}
+      <View>
+        {!state.gameOver && (
+          <PinpointDropdown incrementRevealed={incrementRevealed} />
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -156,17 +196,9 @@ const pinpointStyles = StyleSheet.create({
     fontWeight: "500",
     color: "white",
   },
-  revealedClue: {
-    backgroundColor: "#2a56eb",
-    padding: 15,
+  clueBox: {
+    padding: 20,
     marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  unrevealedClue: {
-    backgroundColor: "#2a56eb",
-    padding: 15,
-    marginHorizontal: 20,
-    marginBottom: 10,
   },
   solved: {
     textAlign: "center",
@@ -177,17 +209,35 @@ const pinpointStyles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
     fontSize: 15,
+    color: "white",
+  },
+  answerContainer: {
+    backgroundColor: "#7c6bff",
+    marginHorizontal: 20,
+    borderRadius: 5,
+    padding: 20,
+    marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
   },
   clueContainer: {
     marginBottom: 15,
   },
   guessContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: 20,
     marginBottom: 15,
+    padding: 15,
+    borderWidth: 0.5,
+    borderColor: "#e0e0e0",
+    borderRadius: 5,
   },
   guess: {
     textDecorationLine: "line-through",
     textDecorationStyle: "solid",
     fontWeight: "500",
+    marginRight: 8,
   },
 });
