@@ -22,7 +22,7 @@ interface reducerState {
 
 interface reducerActionState {
   type: string;
-  team?: string;
+  team?: any;
 }
 
 function createInitialState() {
@@ -34,7 +34,7 @@ function createInitialState() {
   };
 }
 
-function reducer(state: reducerState, action: { type: string; team?: any }) {
+function reducer(state: reducerState, action: reducerActionState) {
   switch (action.type) {
     case "increment_revealed": {
       return {

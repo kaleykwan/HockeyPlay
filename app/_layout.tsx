@@ -1,10 +1,10 @@
-import { Stack } from "expo-router";
+import LoginStateProvider from "@/LoginStateProvider";
+import { Slot } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }}/>
-      <Stack.Screen name="pinpoint" options={{ headerShown: false }}/>
-    </Stack>
+    <LoginStateProvider>
+      <Slot />
+    </LoginStateProvider>
   );
 }
