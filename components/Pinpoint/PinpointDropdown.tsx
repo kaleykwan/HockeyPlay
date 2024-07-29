@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import { LoginStateContext } from "@/LoginStateProvider";
+import { supabase } from "@/supabase";
+import React, { useContext, useMemo, useState } from "react";
 import {
   View,
   TextInput,
@@ -47,30 +49,29 @@ const TEAMS = [
 
 interface DropdownParameters {
   incrementRevealed: (team: string) => void;
+  guesses: string[]
 }
 
 export default function PinpointDropdown({
   incrementRevealed,
+  guesses
 }: DropdownParameters) {
   const [input, setInput] = useState("");
-
-  const [selected, setSelected] = useState<string[]>([]);
 
   const filteredData = useMemo(() => {
     if (!input) return [];
     return TEAMS.filter((item) =>
       item.toLowerCase().includes(input.toLowerCase())
-    ).filter((item) => !selected.includes(item));
+    ).filter((item) => !guesses.includes(item));
   }, [input]);
 
   const handleInputChange = (text: string) => {
     setInput(text);
   };
 
-  const handleOptionSelect = (option: string) => {
+  const handleOptionSelect = async (option: string) => {
     incrementRevealed(option);
     setInput("");
-    setSelected((prev) => [...prev, option]);
   };
 
   return (
@@ -124,6 +125,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   option: {
-    padding: 10
+    padding: 10,
   },
 });

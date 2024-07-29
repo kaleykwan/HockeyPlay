@@ -1,6 +1,14 @@
+import { LoginStateContext } from "@/LoginStateProvider";
 import PinpointDropdown from "@/components/Pinpoint/PinpointDropdown";
+import { supabase } from "@/supabase";
 import { Link } from "expo-router";
-import { useCallback, useReducer, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -23,19 +31,41 @@ interface reducerState {
 interface reducerActionState {
   type: string;
   team?: any;
+  guesses?: any;
+  gameOver?: any;
+  solved?: any;
 }
 
 function createInitialState() {
+  // fetch game status given user id (session.user.id), if null (status hasn't been created yet)
+  // return this default:
   return {
     revealed: 1,
     guesses: [],
     gameOver: false,
     solved: false,
   };
+  // else return
+  /*
+    revealed: gameOver ? 5 : guesses.length + 1
+    guesses: guesses
+    gameOver: gameOver
+    solved: solved
+   */
+  // so game status has an array of guesses and two booleans (gameOver and solved)
 }
 
 function reducer(state: reducerState, action: reducerActionState) {
   switch (action.type) {
+    case "load_game": {
+      return {
+        ...state,
+        revealed: action.guesses.length + 1,
+        guesses: action.guesses,
+        gameOver: action.gameOver,
+        solved: action.solved,
+      };
+    }
     case "increment_revealed": {
       return {
         ...state,
@@ -64,6 +94,8 @@ function reducer(state: reducerState, action: reducerActionState) {
 }
 
 export default function PinpointGame() {
+  const { session } = useContext(LoginStateContext)!;
+
   const [clues, setClues] = useState<string[]>([
     "Michael Bunting",
     "Noel Acciari",
@@ -75,22 +107,84 @@ export default function PinpointGame() {
 
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
 
+  useEffect(() => {
+    async function getGameState() {
+      let { data, error } = await supabase
+        .from("PinpointGameStates")
+        .select("guesses,gameOver,solved")
+        .eq(
+          "date_user_id",
+          `${new Date().toISOString().split("T")[0]}-${session?.user.id}`
+        );
+
+      return data;
+    }
+
+    getGameState().then((data) => {
+      if (data) {
+        dispatch({
+          type: "load_game",
+          guesses: data[0].guesses,
+          gameOver: data[0].gameOver,
+          solved: data[0].solved,
+        });
+      }
+    });
+  }, []);
+
   const incrementRevealed = useCallback(
-    (team: string) => {
+    async (team: string) => {
       if (team == answer) {
         dispatch({
           type: "game_over_solved",
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              gameOver: true,
+              solved: true,
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       } else if (state.revealed + 1 == 5) {
         dispatch({
           type: "game_over_unsolved",
           team: team,
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              gameOver: true,
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       } else {
         dispatch({
           type: "increment_revealed",
           team: team,
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              guesses: [...state.guesses, team],
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       }
     },
     [answer, state.revealed]
@@ -183,7 +277,10 @@ export default function PinpointGame() {
       )}
       <View>
         {!state.gameOver && (
-          <PinpointDropdown incrementRevealed={incrementRevealed} />
+          <PinpointDropdown
+            incrementRevealed={incrementRevealed}
+            guesses={state.guesses}
+          />
         )}
       </View>
     </View>
