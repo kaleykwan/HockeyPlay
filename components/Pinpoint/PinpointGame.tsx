@@ -37,22 +37,12 @@ interface reducerActionState {
 }
 
 function createInitialState() {
-  // fetch game status given user id (session.user.id), if null (status hasn't been created yet)
-  // return this default:
   return {
     revealed: 1,
     guesses: [],
     gameOver: false,
     solved: false,
   };
-  // else return
-  /*
-    revealed: gameOver ? 5 : guesses.length + 1
-    guesses: guesses
-    gameOver: gameOver
-    solved: solved
-   */
-  // so game status has an array of guesses and two booleans (gameOver and solved)
 }
 
 function reducer(state: reducerState, action: reducerActionState) {
