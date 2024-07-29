@@ -17,6 +17,7 @@ export default function Pinpoint() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <View>
+            {/* <Text style={styles.title}>Pinpoint</Text> */}
             <PinpointGame />
           </View>
           <View>

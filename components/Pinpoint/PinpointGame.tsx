@@ -1,6 +1,14 @@
+import { LoginStateContext } from "@/LoginStateProvider";
 import PinpointDropdown from "@/components/Pinpoint/PinpointDropdown";
+import { supabase } from "@/supabase";
 import { Link } from "expo-router";
-import { useCallback, useReducer, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -8,8 +16,10 @@ import {
   Keyboard,
   Text,
   Pressable,
+  Modal,
 } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 
 interface reducerState {
   revealed: number;
@@ -20,20 +30,42 @@ interface reducerState {
 
 interface reducerActionState {
   type: string;
-  team?: string;
+  team?: any;
+  guesses?: any;
+  gameOver?: any;
+  solved?: any;
 }
 
 function createInitialState() {
+  // fetch game status given user id (session.user.id), if null (status hasn't been created yet)
+  // return this default:
   return {
     revealed: 1,
     guesses: [],
     gameOver: false,
     solved: false,
   };
+  // else return
+  /*
+    revealed: gameOver ? 5 : guesses.length + 1
+    guesses: guesses
+    gameOver: gameOver
+    solved: solved
+   */
+  // so game status has an array of guesses and two booleans (gameOver and solved)
 }
 
-function reducer(state: reducerState, action: { type: string; team?: any; }) {
+function reducer(state: reducerState, action: reducerActionState) {
   switch (action.type) {
+    case "load_game": {
+      return {
+        ...state,
+        revealed: action.guesses.length + 1,
+        guesses: action.guesses,
+        gameOver: action.gameOver,
+        solved: action.solved,
+      };
+    }
     case "increment_revealed": {
       return {
         ...state,
@@ -62,6 +94,8 @@ function reducer(state: reducerState, action: { type: string; team?: any; }) {
 }
 
 export default function PinpointGame() {
+  const { session } = useContext(LoginStateContext)!;
+
   const [clues, setClues] = useState<string[]>([
     "Michael Bunting",
     "Noel Acciari",
@@ -73,22 +107,84 @@ export default function PinpointGame() {
 
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
 
+  useEffect(() => {
+    async function getGameState() {
+      let { data, error } = await supabase
+        .from("PinpointGameStates")
+        .select("guesses,gameOver,solved")
+        .eq(
+          "date_user_id",
+          `${new Date().toISOString().split("T")[0]}-${session?.user.id}`
+        );
+
+      return data;
+    }
+
+    getGameState().then((data) => {
+      if (data) {
+        dispatch({
+          type: "load_game",
+          guesses: data[0].guesses,
+          gameOver: data[0].gameOver,
+          solved: data[0].solved,
+        });
+      }
+    });
+  }, []);
+
   const incrementRevealed = useCallback(
-    (team: string) => {
+    async (team: string) => {
       if (team == answer) {
         dispatch({
           type: "game_over_solved",
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              gameOver: true,
+              solved: true,
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       } else if (state.revealed + 1 == 5) {
         dispatch({
           type: "game_over_unsolved",
           team: team,
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              gameOver: true,
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       } else {
         dispatch({
           type: "increment_revealed",
           team: team,
         });
+        const { data, error } = await supabase
+          .from("PinpointGameStates")
+          .upsert(
+            {
+              date_user_id: `${new Date().toISOString().split("T")[0]}-${
+                session?.user.id
+              }`,
+              guesses: [...state.guesses, team],
+            },
+            { onConflict: "date_user_id" }
+          )
+          .select();
       }
     },
     [answer, state.revealed]
@@ -96,8 +192,28 @@ export default function PinpointGame() {
 
   const renderClues = useCallback(
     (clue: string, index: number) => {
+      const baseColor = { r: 96, g: 77, b: 235 };
+      const colorIncrement = 20;
+
+      const backgroundColor = `rgb(
+      ${Math.max(0, baseColor.r - colorIncrement * index)},
+      ${Math.max(0, baseColor.g - colorIncrement * index)},
+      ${Math.max(0, baseColor.b - colorIncrement * index)}
+    )`;
       return (
-        <View key={`${clue}-${index}`} style={pinpointStyles.revealedClue}>
+        <View
+          key={`${clue}-${index}`}
+          style={[
+            pinpointStyles.clueBox,
+            {
+              backgroundColor,
+              borderTopRightRadius: index == 0 ? 5 : 0,
+              borderTopLeftRadius: index == 0 ? 5 : 0,
+              borderBottomRightRadius: index == 4 && !state.gameOver ? 5 : 0,
+              borderBottomLeftRadius: index == 4 && !state.gameOver ? 5 : 0,
+            },
+          ]}
+        >
           {index < state.revealed && (
             <Animated.Text
               entering={FadeIn.duration(550)}
@@ -107,46 +223,67 @@ export default function PinpointGame() {
               {clue}
             </Animated.Text>
           )}
+          {index >= state.revealed && (
+            <Animated.Text
+              entering={FadeIn.duration(550)}
+              exiting={FadeOut}
+              style={pinpointStyles.clue}
+            >
+              Player {index + 1}
+            </Animated.Text>
+          )}
         </View>
       );
     },
     [state.revealed]
   );
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View>
+      <View style={{ marginBottom: state.gameOver ? 0 : 15 }}>
+        {clues.map(renderClues)}
+      </View>
       <View>
-        <View style={pinpointStyles.clueContainer}>
-          {clues.map(renderClues)}
-        </View>
-        {state.guesses.length > 0 && (
-          <View style={pinpointStyles.guessContainer}>
-            {state.guesses.map((team: string, index: number) => (
-              <Text style={pinpointStyles.guess} key={index}>
-                {team}
-              </Text>
-            ))}
-          </View>
-        )}
-        <View>
-          {!state.gameOver && (
-            <PinpointDropdown incrementRevealed={incrementRevealed} />
-          )}
-        </View>
-        <View>
-          {state.gameOver && (
-            <View>
+        {state.gameOver && (
+          <View>
+            <Animated.View
+              entering={FadeIn.duration(550)}
+              style={[
+                pinpointStyles.answerContainer,
+                {
+                  borderTopRightRadius: state.gameOver ? 0 : 5,
+                  borderTopLeftRadius: state.gameOver ? 0 : 5,
+                },
+              ]}
+            >
               {state.solved && (
-                <Text style={pinpointStyles.solved}>You solved it!</Text>
+                <FontAwesome name="check-circle-o" color="white" size={20} />
               )}
               {!state.solved && (
-                <Text style={pinpointStyles.solved}>Better luck tomorrow!</Text>
+                <FontAwesome name="times-circle-o" color="white" size={20} />
               )}
-              <Text style={pinpointStyles.answerText}>Answer: {answer}</Text>
-            </View>
-          )}
-        </View>
+              <Text style={pinpointStyles.answerText}>{answer}</Text>
+            </Animated.View>
+          </View>
+        )}
       </View>
-    </TouchableWithoutFeedback>
+      {state.guesses.length > 0 && (
+        <View style={pinpointStyles.guessContainer}>
+          {state.guesses.map((team: string, index: number) => (
+            <Text style={pinpointStyles.guess} key={index}>
+              {team}
+            </Text>
+          ))}
+        </View>
+      )}
+      <View>
+        {!state.gameOver && (
+          <PinpointDropdown
+            incrementRevealed={incrementRevealed}
+            guesses={state.guesses}
+          />
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -156,17 +293,9 @@ const pinpointStyles = StyleSheet.create({
     fontWeight: "500",
     color: "white",
   },
-  revealedClue: {
-    backgroundColor: "#2a56eb",
-    padding: 15,
+  clueBox: {
+    padding: 20,
     marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  unrevealedClue: {
-    backgroundColor: "#2a56eb",
-    padding: 15,
-    marginHorizontal: 20,
-    marginBottom: 10,
   },
   solved: {
     textAlign: "center",
@@ -177,17 +306,35 @@ const pinpointStyles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
     fontSize: 15,
+    color: "white",
+  },
+  answerContainer: {
+    backgroundColor: "#7c6bff",
+    marginHorizontal: 20,
+    borderRadius: 5,
+    padding: 20,
+    marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
   },
   clueContainer: {
     marginBottom: 15,
   },
   guessContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: 20,
     marginBottom: 15,
+    padding: 15,
+    borderWidth: 0.5,
+    borderColor: "#e0e0e0",
+    borderRadius: 5,
   },
   guess: {
     textDecorationLine: "line-through",
     textDecorationStyle: "solid",
     fontWeight: "500",
+    marginRight: 8,
   },
 });
