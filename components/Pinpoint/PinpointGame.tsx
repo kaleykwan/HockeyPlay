@@ -1,6 +1,7 @@
 import { LoginStateContext } from "@/LoginStateProvider";
 import PinpointDropdown from "@/components/Pinpoint/PinpointDropdown";
 import { supabase } from "@/supabase";
+import { Session } from "@supabase/supabase-js";
 import { Link } from "expo-router";
 import {
   useCallback,
@@ -83,20 +84,9 @@ function reducer(state: reducerState, action: reducerActionState) {
   throw Error("Unknown action: " + action.type);
 }
 
-export default function PinpointGame() {
+const useLoadGame = () => {
   const { session } = useContext(LoginStateContext)!;
-
-  const [clues, setClues] = useState<string[]>([
-    "Michael Bunting",
-    "Noel Acciari",
-    "John Tavares",
-    "Mitch Marner",
-    "Auston Matthews",
-  ]);
-  const [answer, setAnswer] = useState<string>("Toronto Maple Leafs");
-
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
-
   useEffect(() => {
     async function getGameState() {
       let { data, error } = await supabase
@@ -111,7 +101,7 @@ export default function PinpointGame() {
     }
 
     getGameState().then((data) => {
-      if (data) {
+      if (data && data.length > 0) {
         dispatch({
           type: "load_game",
           guesses: data[0].guesses,
@@ -122,63 +112,63 @@ export default function PinpointGame() {
     });
   }, []);
 
+  return { state, dispatch, session };
+};
+
+const updateGameState = async (
+  session: Session | null,
+  upsertArguments: { gameOver?: boolean; solved?: boolean; guesses?: string[] }
+) => {
+  const { data, error } = await supabase
+    .from("PinpointGameStates")
+    .upsert(
+      {
+        date_user_id: `${new Date().toISOString().split("T")[0]}-${
+          session?.user.id
+        }`,
+        ...upsertArguments,
+      },
+      { onConflict: "date_user_id" }
+    )
+    .select();
+};
+
+const usePinpointGameState = () => {
+  const [answer, setAnswer] = useState<string>("Toronto Maple Leafs");
+  const { state, dispatch, session } = useLoadGame();
+
   const incrementRevealed = useCallback(
     async (team: string) => {
       if (team == answer) {
-        dispatch({
-          type: "game_over_solved",
-        });
-        const { data, error } = await supabase
-          .from("PinpointGameStates")
-          .upsert(
-            {
-              date_user_id: `${new Date().toISOString().split("T")[0]}-${
-                session?.user.id
-              }`,
-              gameOver: true,
-              solved: true,
-            },
-            { onConflict: "date_user_id" }
-          )
-          .select();
+        dispatch({ type: "game_over_solved" });
+        updateGameState(session, { gameOver: true, solved: true });
       } else if (state.revealed + 1 == 5) {
-        dispatch({
-          type: "game_over_unsolved",
-          team: team,
+        dispatch({ type: "game_over_unsolved", team: team });
+        updateGameState(session, {
+          gameOver: true,
+          guesses: [...state.guesses, team],
         });
-        const { data, error } = await supabase
-          .from("PinpointGameStates")
-          .upsert(
-            {
-              date_user_id: `${new Date().toISOString().split("T")[0]}-${
-                session?.user.id
-              }`,
-              gameOver: true,
-            },
-            { onConflict: "date_user_id" }
-          )
-          .select();
       } else {
-        dispatch({
-          type: "increment_revealed",
-          team: team,
-        });
-        const { data, error } = await supabase
-          .from("PinpointGameStates")
-          .upsert(
-            {
-              date_user_id: `${new Date().toISOString().split("T")[0]}-${
-                session?.user.id
-              }`,
-              guesses: [...state.guesses, team],
-            },
-            { onConflict: "date_user_id" }
-          )
-          .select();
+        dispatch({ type: "increment_revealed", team: team });
+        updateGameState(session, { guesses: [...state.guesses, team] });
       }
     },
     [answer, state.revealed]
   );
+
+  return { incrementRevealed, answer, state };
+};
+
+export default function PinpointGame() {
+  const { incrementRevealed, answer, state } = usePinpointGameState();
+
+  const [clues, setClues] = useState<string[]>([
+    "Michael Bunting",
+    "Noel Acciari",
+    "John Tavares",
+    "Mitch Marner",
+    "Auston Matthews",
+  ]);
 
   const renderClues = useCallback(
     (clue: string, index: number) => {
