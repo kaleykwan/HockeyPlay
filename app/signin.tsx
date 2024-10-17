@@ -17,20 +17,14 @@ export default function SignUp() {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-  async function signUpWithEmail() {
+  async function signInWithEmail() {
     setLoading(true);
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
 
     if (error) Alert.alert(error.message);
-    if (!session)
-      Alert.alert("Please check your inbox for email verification!");
-
     router.replace("/");
     setLoading(false);
   }
@@ -48,23 +42,19 @@ export default function SignUp() {
         onChangeText={(text) => setPassword(text)}
         value={password}
         secureTextEntry={true}
-        placeholder="Password"
+        placeholder="password"
         autoCapitalize={"none"}
         placeholderTextColor={"gray"}
         style={styles.input}
       />
       <Pressable
         disabled={loading}
-        onPress={() => signUpWithEmail()}
-        style={styles.signUpButton}
+        onPress={() => signInWithEmail()}
+        style={styles.signInButton}
       >
-        <Text style={styles.signUpButtonText}>Sign Up</Text>
+        <Text style={styles.signInButtonText}>Sign In</Text>
       </Pressable>
-      <Pressable
-        disabled={loading}
-        onPress={() => router.replace("/signin")}
-        style={styles.clickHereButton}
-      >
+      <Pressable disabled={loading} onPress={() => router.replace("/signup")} style={styles.clickHereButton}>
         <Text style={styles.clickHereText}>Click here to sign up</Text>
       </Pressable>
     </SafeAreaView>
@@ -76,13 +66,13 @@ const styles = StyleSheet.create({
     marginLeft: 30,
     marginBottom: 15,
   },
-  signUpButton: {
+  signInButton: {
     backgroundColor: "#412fb5",
     padding: 10,
     alignSelf: "center",
-    borderRadius: 10,
+    borderRadius: 10
   },
-  signUpButtonText: {
+  signInButtonText: {
     color: "white",
   },
   clickHereButton: {
@@ -90,6 +80,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   clickHereText: {
-    color: "#4093ff",
-  },
+    color: "#4093ff"
+  }
 });

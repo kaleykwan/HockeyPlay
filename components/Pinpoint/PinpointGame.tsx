@@ -7,20 +7,18 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useState,
 } from "react";
 import {
   View,
   StyleSheet,
-  TouchableWithoutFeedback,
-  Keyboard,
   Text,
-  Pressable,
-  Modal,
 } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { LocalDateContext } from "@/app/_layout";
 
 interface reducerState {
   revealed: number;
@@ -86,17 +84,25 @@ function reducer(state: reducerState, action: reducerActionState) {
 
 const useLoadGame = () => {
   const { session } = useContext(LoginStateContext)!;
+  const date = useContext(LocalDateContext);
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
+  const [answer, setAnswer] = useState<string>("")
+  const [clues, setClues] = useState<string[]>([])
   useEffect(() => {
     async function getGameState() {
       let { data, error } = await supabase
         .from("PinpointGameStates")
         .select("guesses,gameOver,solved")
-        .eq(
-          "date_user_id",
-          `${new Date().toISOString().split("T")[0]}-${session?.user.id}`
-        );
+        .eq("date_user_id", `${date}-${session?.user.id}`);
 
+      return data;
+    }
+
+    async function getGameInfo() {
+      let { data, error } = await supabase
+        .from("PinpointGameArchive")
+        .select("answer,clues")
+        .eq("game_day", date);
       return data;
     }
 
@@ -110,22 +116,28 @@ const useLoadGame = () => {
         });
       }
     });
+
+    getGameInfo().then((data) => {
+      if (data && data.length > 0) {
+        setAnswer(data[0].answer)
+        setClues(data[0].clues)
+      }
+    })
   }, []);
 
-  return { state, dispatch, session };
+  return { state, answer, clues, dispatch, session, date };
 };
 
 const updateGameState = async (
   session: Session | null,
+  date: string,
   upsertArguments: { gameOver?: boolean; solved?: boolean; guesses?: string[] }
 ) => {
   const { data, error } = await supabase
     .from("PinpointGameStates")
     .upsert(
       {
-        date_user_id: `${new Date().toISOString().split("T")[0]}-${
-          session?.user.id
-        }`,
+        date_user_id: `${date}-${session?.user.id}`,
         ...upsertArguments,
       },
       { onConflict: "date_user_id" }
@@ -134,41 +146,32 @@ const updateGameState = async (
 };
 
 const usePinpointGameState = () => {
-  const [answer, setAnswer] = useState<string>("Toronto Maple Leafs");
-  const { state, dispatch, session } = useLoadGame();
+  const { state, answer, clues, dispatch, session, date } = useLoadGame();
 
   const incrementRevealed = useCallback(
     async (team: string) => {
       if (team == answer) {
         dispatch({ type: "game_over_solved" });
-        updateGameState(session, { gameOver: true, solved: true });
+        updateGameState(session, date, { gameOver: true, solved: true });
       } else if (state.revealed + 1 == 5) {
         dispatch({ type: "game_over_unsolved", team: team });
-        updateGameState(session, {
+        updateGameState(session, date, {
           gameOver: true,
           guesses: [...state.guesses, team],
         });
       } else {
         dispatch({ type: "increment_revealed", team: team });
-        updateGameState(session, { guesses: [...state.guesses, team] });
+        updateGameState(session, date, { guesses: [...state.guesses, team] });
       }
     },
     [answer, state.revealed]
   );
 
-  return { incrementRevealed, answer, state };
+  return { incrementRevealed, answer, clues, state };
 };
 
 export default function PinpointGame() {
-  const { incrementRevealed, answer, state } = usePinpointGameState();
-
-  const [clues, setClues] = useState<string[]>([
-    "Michael Bunting",
-    "Noel Acciari",
-    "John Tavares",
-    "Mitch Marner",
-    "Auston Matthews",
-  ]);
+  const { incrementRevealed, answer, clues, state } = usePinpointGameState();
 
   const renderClues = useCallback(
     (clue: string, index: number) => {
@@ -194,7 +197,7 @@ export default function PinpointGame() {
             },
           ]}
         >
-          {index < state.revealed && (
+          {(index < state.revealed || state.gameOver) && (
             <Animated.Text
               entering={FadeIn.duration(550)}
               exiting={FadeOut}
@@ -203,7 +206,7 @@ export default function PinpointGame() {
               {clue}
             </Animated.Text>
           )}
-          {index >= state.revealed && (
+          {index >= state.revealed && !state.gameOver && (
             <Animated.Text
               entering={FadeIn.duration(550)}
               exiting={FadeOut}
